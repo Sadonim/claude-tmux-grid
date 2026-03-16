@@ -77,12 +77,36 @@ active_pane() {
   tmux display-message -t "${SESSION}:${WINDOW}" -p "#{pane_id}"
 }
 
-# Register a pane→agent mapping and set its border title
+# Register a pane→agent mapping and set its border title.
+# If a window named $agent already exists in the session, the overview pane
+# becomes a mirror (live capture loop) and the config tracks the real agent pane.
 register_agent() {
   local pane_id="$1" agent="$2"
-  echo "${pane_id}=${agent}" >> "$CONF_FILE"
   tmux select-pane -t "$pane_id" -T "$agent" 2>/dev/null || true
-  ok "$agent  →  $pane_id"
+
+  # Look for an existing window with the same name as this agent
+  local actual_pane=""
+  if tmux list-windows -t "$SESSION" -F "#{window_name}" 2>/dev/null | grep -qx "$agent"; then
+    actual_pane=$(tmux list-panes -t "${SESSION}:${agent}" -F "#{pane_id}" 2>/dev/null | head -1)
+  fi
+
+  if [ -n "$actual_pane" ]; then
+    # Config: real pane for monitor activity tracking
+    echo "${actual_pane}=${agent}" >> "$CONF_FILE"
+    # Config: overview pane for rebalance layout sizing
+    echo "LAYOUT_${pane_id}=${agent}" >> "$CONF_FILE"
+    # Overview pane continuously mirrors the real agent pane.
+    # awk strips the last 6 lines (Claude's bottom input UI: ❯ prompt, esc/shortcuts,
+    # auto-compact bar) so only actual output content is visible in the small overview pane.
+    # Uses awk instead of 'head -n -N' for macOS (BSD head) compatibility.
+    tmux send-keys -t "$pane_id" \
+      "old=''; while true; do new=\$(tmux capture-pane -t ${actual_pane} -p 2>/dev/null | awk 'NR>6{print prev[NR%6]} {prev[NR%6]=\$0}'); if [ \"\$new\" != \"\$old\" ]; then clear; printf '%s\n' \"\$new\"; old=\"\$new\"; fi; sleep 0.5; done" Enter
+    ok "$agent  mirror →  ${actual_pane}  (overview pane: $pane_id)"
+  else
+    # No existing window — this pane IS the agent (original behaviour)
+    echo "${pane_id}=${agent}" >> "$CONF_FILE"
+    ok "$agent  →  $pane_id"
+  fi
 }
 
 # =============================================================================
@@ -414,6 +438,20 @@ main() {
   # ── Finalize ─────────────────────────────────────────────────────────────────
   setup_borders
   setup_resize
+
+  # ── Move overview window to position 0 (always first) ───────────────────────
+  if tmux list-windows -t "$SESSION" -F "#{window_index}" 2>/dev/null | grep -q "^0$"; then
+    local zero_name
+    zero_name=$(tmux list-windows -t "$SESSION" -F "#{window_index} #{window_name}" \
+      | awk '$1==0 {print $2}')
+    if [ "$zero_name" != "$WINDOW" ]; then
+      tmux move-window -s "${SESSION}:0" -t "${SESSION}:99" 2>/dev/null || true
+      tmux move-window -s "${SESSION}:${WINDOW}" -t "${SESSION}:0"
+    fi
+  else
+    tmux move-window -s "${SESSION}:${WINDOW}" -t "${SESSION}:0"
+  fi
+
   tmux select-window -t "$SESSION:$WINDOW"
 
   echo ""
