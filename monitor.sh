@@ -145,15 +145,36 @@ detect_proj_dir() {
   PROJ_DIR="$cwd"
 }
 
+# ─── Current feature from Level 3 handoff ─────────────────────────────────────
+get_current_feature() {
+  local handoffs_dir="${PROJ_DIR}/docs/handoffs"
+  [ -d "$handoffs_dir" ] || { echo ""; return; }
+  local latest_file
+  latest_file=$(ls -t "${handoffs_dir}"/*.md 2>/dev/null | grep -v signals | head -1)
+  [ -z "$latest_file" ] && { echo ""; return; }
+  grep "^FEATURE:" "$latest_file" 2>/dev/null | head -1 | cut -d: -f2- | sed 's/^ //'
+}
+
 # ─── Level 2: .done signal check ─────────────────────────────────────────────
 # Returns "SUMMARY_TEXT" if a .done file exists for this agent, else ""
 get_level2_done() {
   local agent="$1"
   local signals_dir="${PROJ_DIR}/docs/handoffs/signals"
   [ -d "$signals_dir" ] || return
-  local done_file
-  done_file=$(ls "${signals_dir}/${agent}_"*.done 2>/dev/null | tail -1)
-  [ -z "$done_file" ] && return
+
+  local current_feature done_file
+  current_feature=$(get_current_feature)
+
+  if [ -n "$current_feature" ]; then
+    # Only accept .done for the current active feature
+    done_file="${signals_dir}/${agent}_${current_feature}.done"
+    [ -f "$done_file" ] || return
+  else
+    # Fallback: use latest .done if feature can't be determined
+    done_file=$(ls "${signals_dir}/${agent}_"*.done 2>/dev/null | tail -1)
+    [ -z "$done_file" ] && return
+  fi
+
   local summary feature
   feature=$(grep "^FEATURE:" "$done_file" 2>/dev/null | cut -d: -f2- | sed 's/^ //')
   summary=$(grep "^SUMMARY:" "$done_file" 2>/dev/null | cut -d: -f2- | sed 's/^ //' | cut -c1-35)
@@ -311,10 +332,10 @@ get_agent_status() {
     icon="${C_GRY}●${C_RST}"; status="idle"
   fi
 
-  # ── Level 2: .done signal overrides everything ─────────────────────────────
+  # ── Level 2: .done signal — only when agent is not actively working ────────
   local done_summary
   done_summary=$(get_level2_done "$agent_name" 2>/dev/null || true)
-  if [ -n "$done_summary" ]; then
+  if [ -n "$done_summary" ] && [[ "$status" != "thinking" && "$status" != "running" ]]; then
     printf "%b|%s|%s|%s" "${C_GRN}✅${C_RST}" "DONE" "$age_str" "$done_summary"
     return
   fi
