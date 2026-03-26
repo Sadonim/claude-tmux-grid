@@ -1,11 +1,39 @@
-# claude-tmux-grid
+<p align="center">
+  <br />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/%F0%9F%96%A5%EF%B8%8F-claude--tmux--grid-03B26C?style=for-the-badge&labelColor=141B2D">
+    <img alt="claude-tmux-grid" src="https://img.shields.io/badge/%F0%9F%96%A5%EF%B8%8F-claude--tmux--grid-03B26C?style=for-the-badge&labelColor=191F28" height="48">
+  </picture>
+  <br />
+  <b>Live multi-agent tmux dashboard for Claude Code workflows</b>
+  <br />
+  <sub>Colour-coded status borders, todo progress bars, tool-type action icons, and system resource monitoring in a single overview pane</sub>
+  <br />
+  <br />
+  <a href="https://github.com/Sadonim/claude-tmux-grid/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="MIT License"></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/bash-3.2%2B-4EAA25?style=flat-square&logo=gnubash&logoColor=white" alt="bash 3.2+"></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/tmux-3.0%2B-1BB91F?style=flat-square&logo=tmux&logoColor=white" alt="tmux 3.0+"></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.x"></a>
+  <a href="#"><img src="https://img.shields.io/badge/platform-macOS-000000?style=flat-square&logo=apple&logoColor=white" alt="macOS"></a>
+  <br />
+  <br />
+</p>
 
-> Live multi-agent tmux dashboard for Claude Code workflows — colour-coded status borders, todo progress bars, tool-type action icons, and system resource monitoring in a single overview pane.
+---
 
-![bash 3.2+](https://img.shields.io/badge/bash-3.2%2B-blue)
-![tmux 3.0+](https://img.shields.io/badge/tmux-3.0%2B-green)
-![python3](https://img.shields.io/badge/python-3.x-yellow)
-![license MIT](https://img.shields.io/badge/license-MIT-lightgrey)
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Layout Algorithm](#layout-algorithm)
+- [Status Detection](#status-detection)
+- [Action History Hierarchy](#action-history-hierarchy)
+- [Files](#files)
+- [Optional tmux Keybinding](#optional-tmux-keybinding)
+- [License](#license)
 
 ---
 
